@@ -1,0 +1,3 @@
+[Docker]
+CDRNode1 ansible_host=wwww.example.com ansible_user=exampeluser ansible_sudo_pass='examplepass' ansible_ssh_private_key_file=/home/exapleuser/.ssh/id_rsa
+CDRNode2 ansible_host=wwww.example.com ansible_user=exampeluser ansible_sudo_pass='examplepass' ansible_ssh_private_key_file=/home/exapleuser/.ssh/id_rsa

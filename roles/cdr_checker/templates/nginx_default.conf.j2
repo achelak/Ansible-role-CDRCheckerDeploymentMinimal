@@ -1,0 +1,50 @@
+server {
+    server_name myapp.loc;
+    listen 80;
+    root /var/www/html;
+    index index.php index.html index.htm;
+
+    access_log /var/log/nginx/back-access.log;
+    error_log /var/log/nginx/back-error.log;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+    # Add stdout logging
+	error_log /dev/stdout info;
+	access_log /dev/stdout;
+    
+    # Nginx status page
+    location /nginx_status {
+    stub_status on;
+    access_log off;
+    allow 127.0.0.1;
+    allow 172.16.0.0/12;
+    # allow 127.0.0.1/12;
+    deny all;
+        }
+
+    # PHP-FPM Configuration Nginx
+    location ~ \.php$ {
+        try_files $uri = 404;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass php-fpm:9000;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param REQUEST_URI $request_uri;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+    }
+
+    # Gunicorn config
+    location /api/cdr_list {
+        proxy_pass http://cdr_api:5000/cdr_list;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $host;
+        proxy_redirect off;
+        auth_basic           "Administrator Area";
+        auth_basic_user_file /etc/nginx/conf.d/.htpasswd; 
+    }
+
+
+}

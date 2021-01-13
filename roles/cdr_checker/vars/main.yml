@@ -1,0 +1,8 @@
+---
+# vars file for deoloy_cdr_checker
+# vars for docker-compose file
+POSTGRES_DB: postgres 
+POSTGRES_USER: postgres    
+POSTGRES_PASSWORD: password
+API_USER: admin
+API_PASSWORD: admin

@@ -1,0 +1,96 @@
+---
+ - name: Install aptitude using apt
+   become: true
+   apt:
+      name: aptitude
+      state: latest
+      update_cache: yes
+      force_apt_get: true
+
+
+ - name: Update and upgrade apt packages
+   become: true
+   apt:
+    upgrade: "yes"
+    update_cache: "yes"
+    cache_valid_time: "86400"
+
+
+ - name: Install required packages
+   become: true
+   apt:
+      pkg: "{{ item }}"
+      state: latest
+      update_cache: yes
+   with_items:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg-agent
+      - software-properties-common
+      - python3-pip
+
+
+ - name: Import Docker CE and CTOP repository gpg key
+   become: true
+   apt_key:
+      url: "{{ item }}"
+      state: present
+   with_items:
+      - "{{ docker_key_url }}"
+      - "{{ ctop_key_url }}"
+
+
+ - name: Add Docker CE and CTOP repositorys 
+   become: true
+   apt_repository:
+      repo: "{{ item }}"
+      state: present
+      update_cache: yes
+   with_items:
+      - "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+      - "deb http://packages.azlux.fr/debian/ buster main"
+
+
+ - name: Install Docker CE and docker-ctop
+   become: true
+   apt:
+      name: "{{ item }}"
+      state: present
+      update_cache: yes
+   with_items:
+      - docker-ce
+      - docker-ctop
+   
+
+ - name: Install docker-compose
+   become: true
+   get_url:
+    url: https://github.com/docker/compose/releases/download/1.25.3/docker-compose-Linux-x86_64
+    dest: "{{ docker_compose_path }}"
+    mode: 0755
+
+
+ - name: Install Docker Module for Python
+   become: yes
+   pip:
+    name:
+     - docker
+     - docker-compose
+     - passlib
+
+
+ - name: Add user to docker group
+   become: true
+   user:
+      name: '{{ ansible_user }}'
+      groups: 'docker'
+      append: 'yes'
+
+
+
+
+
+ 
+  
+

@@ -1,0 +1,77 @@
+version: '3.7'
+
+networks:
+  api-net:
+    driver: bridge
+
+services:
+
+
+  adminer:
+     image: adminer:4.7.7-standalone
+     container_name: adminer
+     restart: always
+     depends_on:
+       - db
+     ports:
+       - 6080:8080
+     networks:
+       - api-net
+
+  nginx:
+    container_name: nginx
+    image: nginx:1.17
+    ports:
+      - 80:80
+    volumes:
+      - ./www/html/AudiocodesCDRChecker:/var/www/html
+      - ./nginxcfg:/etc/nginx/conf.d
+    depends_on:
+      - api
+      - php-fpm
+    networks:
+      - api-net
+
+  php-fpm:
+    container_name: php-fpm
+    image: achelak/cdr_checker:php_fpm
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./www/html/AudiocodesCDRChecker:/var/www/html
+    networks:
+      - api-net
+
+
+  db:
+    container_name: postgres-db
+    image: postgres:9.6
+    restart: always
+    shm_size: 2gb
+    volumes:
+      - ./dbpostgres:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - api-net
+  
+
+  api:
+    container_name: cdr_api
+    image: achelak/cdr_checker:cdr_api_5.6
+    restart: always
+    environment:
+      API_DB_HOST: db
+      API_DB_USER: ${POSTGRES_USER}
+      API_DB_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./log:/opt/cdr_api/log
+    depends_on:
+      - db
+    networks:
+      - api-net
+

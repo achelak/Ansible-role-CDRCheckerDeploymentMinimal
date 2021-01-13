@@ -1,0 +1,202 @@
+---
+  - name: Check project directory exists.
+    stat:
+      path: "{{ project_dir }}"
+    register: project_dir_to_delete
+
+
+  - debug:
+      msg: "Project directory is exists"
+    when: project_dir_to_delete.stat.exists and project_dir_to_delete.stat.isdir
+
+
+  - name: Clean project path
+    become: true
+    file:
+      state: absent
+      path: "{{ project_dir }}/"
+    when: project_dir_to_delete.stat.exists and project_dir_to_delete.stat.isdir
+
+
+  - name: Create project dir
+    file:
+      path: "{{ project_dir }}"
+      state: directory
+  
+  
+  - name: Create work dirs
+    file:
+      path: "{{ item }}"
+      state: directory
+    with_items:
+      - "{{ project_dir }}/dbpostgres"
+      - "{{ project_dir }}/log"
+      - "{{ project_dir }}/nginxcfg"
+      - "{{ project_dir }}/www/html"
+      - "{{ project_dir }}/init"
+
+
+  - name: Adding nginx configuration file
+    template:
+      src: nginx_default.conf.j2
+      dest: "{{ project_dir }}/nginxcfg/default.conf"
+
+
+  - name: Create credential for NGINX Basic Auth
+    htpasswd:
+      path: "{{ project_dir }}/nginxcfg/.htpasswd"
+      name: "{{ API_USER }}"
+      password: "{{ API_PASSWORD }}"
+      crypt_scheme: md5_crypt
+
+
+  - name: Clone CDR Viewer web app repo
+    command: git -C {{ project_dir }}/www/html clone https://github.com/achelak/AudiocodesCDRChecker.git
+
+
+  - name: Pulling all project`s images
+    become: true
+    docker_image:
+      name: "{{ item }}"
+      source: pull
+      # force_source: yes
+    with_items:
+      - adminer:{{ adminer_version }}      
+      - achelak/cdr_checker:{{ custom_php_fpm_version }}
+      - nginx:{{ nginx_version }}
+      - postgres:{{ postgres_version }}
+
+
+  - name: Pulling docker api image
+    become: true
+    docker_image:
+      name: achelak/cdr_checker:{{cdr_api_version}}
+      source: pull
+      force_source: yes
+
+
+  - name: Copy docker-compose file
+    copy:
+      src: docker-compose.yml
+      dest: "{{ project_dir }}/docker-compose.yml"
+
+
+  - name: Copy init.sql file
+    copy:
+      src: init.sql
+      dest: "{{ project_dir }}/init/init.sql"
+
+
+  - name: Copy .env template
+    template:
+      src: .env.example.j2
+      dest: "{{ project_dir }}/.env"
+
+
+  - name: Copy initializer.sh template
+    template:
+      src: initializer.sh.j2
+      dest: "{{ project_dir }}/init/initializer.sh"
+      mode: '0711'
+
+
+  - name: Checking for down compose
+    docker_container_info:
+      name: adminer
+    register: down_chck
+
+
+  - name: Running Docker-compose down
+    become: true
+    docker_compose:
+        project_src: "{{ project_dir }}"
+        state: absent
+        pull: no
+    when: down_chck.exists
+  
+
+  - name: Running Docker-compose up
+    become: true
+    docker_compose:
+       project_src: "{{ project_dir }}"
+       state: present
+       pull: no
+
+
+  - name: Get infos on container`s
+    docker_container_info:
+      name: "{{ item }}"
+    with_items:
+      - adminer
+      - nginx
+      - php-fpm
+      - postgres-db
+      - cdr_api
+    register: result
+
+
+  - name: Does container exist?
+    ansible.builtin.debug:
+      msg: "{{ item }}"
+    with_items:
+     - "The container {{ result.results[0]['container']['Name'] }} status is {{ result.results[0]['container']['State']['Status'] }}"
+     - "The container {{ result.results[1]['container']['Name'] }} status is {{ result.results[1]['container']['State']['Status'] }}"
+     - "The container {{ result.results[2]['container']['Name'] }} status is {{ result.results[2]['container']['State']['Status'] }}"
+     - "The container {{ result.results[3]['container']['Name'] }} status is {{ result.results[3]['container']['State']['Status'] }}"
+     - "The container {{ result.results[4]['container']['Name'] }} status is {{ result.results[4]['container']['State']['Status'] }}"
+  
+  
+  - name: Executing the initializer.sh
+    become: true
+    shell:
+     cmd: ./initializer.sh
+     chdir: "{{ project_dir }}/init/"
+    register: init
+
+
+  - debug:
+      msg: "{{ init.stdout }}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  # - name: Build php-fpm image from CDRChecker
+  #   docker_image:
+  #     build:
+  #       path: "{{ source_code_dir }}/docker/dockerphp"
+  #       pull: yes
+  #     name: achelak/cdr_checker
+  #     tag: php_fpm
+  #     source: build
+  #     state: present
+
+
+  # - name: Build python api image from CDRChecker
+  #   docker_image:
+  #     build:
+  #       path: "{{ source_code_dir }}/docker/dockerpy"
+  #       pull: yes
+  #     name: achelak/cdr_checker
+  #     tag: cdr_api_5.6
+  #     source: build
+  #     state: present
+
+
+
+
+
+
+
+  

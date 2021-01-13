@@ -1,0 +1,12 @@
+---
+ - name: Deploy CDR Checker
+   gather_facts: true
+   hosts: all
+
+   roles:
+    - role: docker_ce 
+      tags:
+        - dcr
+    - role: cdr_checker
+      tags:
+        - cdr
