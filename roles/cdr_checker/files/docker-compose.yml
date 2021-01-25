@@ -36,6 +36,7 @@ services:
     container_name: php-fpm
     image: achelak/cdr_checker:php_fpm
     environment:
+      POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -65,7 +66,7 @@ services:
     image: achelak/cdr_checker:cdr_api_5.6
     restart: always
     environment:
-      API_DB_HOST: db
+      API_DB_HOST: ${POSTGRES_HOST}
       API_DB_USER: ${POSTGRES_USER}
       API_DB_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:

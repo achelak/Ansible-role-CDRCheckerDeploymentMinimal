@@ -1,6 +1,7 @@
 ---
 # vars file for deoloy_cdr_checker
 # vars for docker-compose file
+POSTGRES_HOST: db
 POSTGRES_DB: postgres 
 POSTGRES_USER: postgres    
 POSTGRES_PASSWORD: password

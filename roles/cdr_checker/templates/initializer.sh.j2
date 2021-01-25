@@ -4,6 +4,7 @@ CONTAINER="postgres-db"
 RUNNING=$(docker inspect --format="{{ '{{.State.Running}}' }}" $CONTAINER 2> /dev/null)
 DB_NAME="{{ POSTGRES_DB }}"
 DB_USER="{{ POSTGRES_USER }}"
+DB_HOST="{{ POSTGRES_HOST }}"
 
 #until [ "$RUNNING" == "true" ]
 #do
@@ -12,6 +13,6 @@ DB_USER="{{ POSTGRES_USER }}"
 
 
 docker cp ./init.sql $CONTAINER:/opt/init.sql
-docker exec -it postgres-db sh -c "psql -U '$DB_USER' -w -d '$DB_NAME' -f /opt/init.sql"
+docker exec -it '$DB_HOST' sh -c "psql -U '$DB_USER' -w -d '$DB_NAME' -f /opt/init.sql"
 docker exec -it nginx bash -c "service nginx reload"
 
