@@ -34,6 +34,8 @@ server {
         fastcgi_param REQUEST_URI $request_uri;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         fastcgi_param PATH_INFO $fastcgi_path_info;
+        auth_basic           "Administrator Area";
+        auth_basic_user_file /etc/nginx/conf.d/.htpasswd; 
     }
 
     # Gunicorn config
